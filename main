@@ -1,18 +1,18 @@
-
 local Players = game:GetService("Players")
 local CollectionService = game:GetService("CollectionService")
 local StarterGui = game:GetService("StarterGui")
-local executionWork = false
-local ExecuteWork = false
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local player = Players.LocalPlayer
+
+local ExecuteWork = false
 local backdoor
 
 local function generateRandomString(length)
     local chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
     local result = ""
     for i = 1, length do
-        local randIndex = math.random(1, #chars)
-        result = result .. chars:sub(randIndex, randIndex)
+        local idx = math.random(1, #chars)
+        result = result .. chars:sub(idx, idx)
     end
     return result
 end
@@ -22,14 +22,10 @@ local CD = generateRandomString(10)
 local function runRemote(remote, data)
     if not remote then return end
     if remote:IsA("RemoteEvent") then
-        pcall(function()
-            remote:FireServer(data)
-        end)
+        pcall(function() remote:FireServer(data) end)
     elseif remote:IsA("RemoteFunction") then
         spawn(function()
-            pcall(function()
-                remote:InvokeServer(data)
-            end)
+            pcall(function() remote:InvokeServer(data) end)
         end)
     end
 end
@@ -60,6 +56,7 @@ noob.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 noob.ResetOnSpawn = false
 noob.Parent = playerGui
 CollectionService:AddTag(noob, "main")
+noob:SetAttribute("ScannerID", CD)
 
 local Frame = Instance.new("Frame")
 Frame.Name = "Frame"
@@ -94,7 +91,7 @@ txtbox.TextColor3 = Color3.fromRGB(255, 255, 255)
 txtbox.TextXAlignment = Enum.TextXAlignment.Left
 txtbox.TextYAlignment = Enum.TextYAlignment.Top
 txtbox.TextSize = 12
-txtbox.FontFace = Font.new("rbxasset://fonts/families/SourceSans.json", Enum.FontWeight.Regular, Enum.FontStyle.Normal)
+txtbox.Font = Enum.Font.SourceSans
 txtbox.Parent = Frame
 
 local Execute = Instance.new("TextButton")
@@ -135,12 +132,19 @@ Inject.Parent = Frame
 Instance.new("UICorner", Inject)
 Instance.new("UICorner", Frame)
 
+local function tryRegister()
+    local registerRemote = ReplicatedStorage:FindFirstChild("RegisterScanner")
+    if registerRemote and registerRemote:IsA("RemoteEvent") then
+        pcall(function() registerRemote:FireServer(CD) end)
+    end
+end
+
 Inject.MouseButton1Click:Connect(function()
     local found = findRemotes()
     if #found == 0 then
         StarterGui:SetCore("SendNotification", {
-            Title = "No Backdoor was found.",
-            Text = "The game does not have any remotes 😐",
+            Title = "No Backdoor Found 😭",
+            Text = "No remotes found.",
             Duration = 4
         })
         return
@@ -163,10 +167,11 @@ Inject.MouseButton1Click:Connect(function()
                 Text = "The game has a backdoor. Backdoor was found in "..elapsedText.." seconds",
                 Duration = 5
             })
+            tryRegister()
         else
             StarterGui:SetCore("SendNotification", {
-                Title = "The game is not infected.",
-                Text = "Sadly the game isn't infected 😭",
+                Title = "No Backdoor Found 😭",
+                Text = "No backdoor was created by any remote.",
                 Duration = 5
             })
         end

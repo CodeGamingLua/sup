@@ -94,7 +94,7 @@ txtbox.TextColor3 = Color3.fromRGB(255, 255, 255)
 txtbox.TextXAlignment = Enum.TextXAlignment.Left
 txtbox.TextYAlignment = Enum.TextYAlignment.Top
 txtbox.TextSize = 12
-txtbox.FontFace = Font.new("rbxasset://fonts/families/Inconsolata.json", Enum.FontWeight.Regular, Enum.FontStyle.Normal)
+txtbox.FontFace = Font.new("rbxasset://fonts/families/SourceSans.json", Enum.FontWeight.Regular, Enum.FontStyle.Normal)
 txtbox.Parent = Frame
 
 local Execute = Instance.new("TextButton")

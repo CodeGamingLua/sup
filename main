@@ -156,7 +156,7 @@ Inject.MouseButton1Click:Connect(function()
     end
 
     task.delay(0.01, function()
-        local model = workspace:WaitForChild(CD)
+        local model = workspace:WaitForChild(CD,10)
         if model and not ExecuteWork then
             ExecuteWork = true
             backdoor = found[1]

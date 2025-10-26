@@ -35,8 +35,12 @@ local function findRemotes()
     local stack = {workspace, game:GetService("ReplicatedStorage")}
 
     while #stack > 0 do
-        local parent = table.remove(stack)
-        for _, obj in ipairs(parent:GetChildren()) do
+        local parent = stack[#stack]
+        stack[#stack] = nil
+        local children = parent:GetChildren()
+        local count = #children
+        for i = 1, count do
+            local obj = children[i]
             local class = obj.ClassName
             if class == "RemoteEvent" or class == "RemoteFunction" then
                 remotes[#remotes + 1] = obj

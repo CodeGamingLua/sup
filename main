@@ -2,6 +2,10 @@ local Players = game:GetService("Players")
 local CollectionService = game:GetService("CollectionService")
 local StarterGui = game:GetService("StarterGui")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+while not Players.LocalPlayer do
+    task.wait()
+end
 local player = Players.LocalPlayer
 
 local ExecuteWork = false
@@ -41,8 +45,8 @@ local function findRemotes()
             end
         end
     end
-    scan(game.Workspace)
-    scan(game.ReplicatedStorage)
+    if game.Workspace then scan(game.Workspace) end
+    if game.ReplicatedStorage then scan(game.ReplicatedStorage) end
     return remotes
 end
 
@@ -140,6 +144,15 @@ local function tryRegister()
 end
 
 Inject.MouseButton1Click:Connect(function()
+    if ExecuteWork then
+        StarterGui:SetCore("SendNotification", {
+            Title = "Already Injected",
+            Text = "A backdoor was already detected.",
+            Duration = 4
+        })
+        return
+    end
+
     local found = findRemotes()
     if #found == 0 then
         StarterGui:SetCore("SendNotification", {
@@ -155,9 +168,28 @@ Inject.MouseButton1Click:Connect(function()
         runRemote(remote, 'local a = Instance.new("Model",workspace) a.Name = "'..CD..'"')
     end
 
-    task.delay(0.01, function()
-        local model = workspace:WaitForChild(CD,10)
-        if model and not ExecuteWork then
+    local model = workspace:FindFirstChild(CD)
+    if model then
+        ExecuteWork = true
+        backdoor = found[1]
+        local elapsed = tick() - startTime
+        local elapsedText = string.format("%.2f", elapsed)
+        StarterGui:SetCore("SendNotification", {
+            Title = "Backdoor Found!",
+            Text = "The game has a backdoor. Backdoor was found in "..elapsedText.." seconds",
+            Duration = 5
+        })
+        tryRegister()
+        return
+    end
+
+    local timeout = 8
+    local done = false
+    local conn
+    conn = workspace.ChildAdded:Connect(function(child)
+        if child.Name == CD and not ExecuteWork then
+            done = true
+            if conn then conn:Disconnect() end
             ExecuteWork = true
             backdoor = found[1]
             local elapsed = tick() - startTime
@@ -168,14 +200,22 @@ Inject.MouseButton1Click:Connect(function()
                 Duration = 5
             })
             tryRegister()
-        else
-            StarterGui:SetCore("SendNotification", {
-                Title = "No Backdoor Found 😭",
-                Text = "No backdoor was created by any remote.",
-                Duration = 5
-            })
         end
     end)
+
+    local t0 = tick()
+    while not done and tick() - t0 < timeout do
+        task.wait(0.05)
+    end
+
+    if not done then
+        if conn then conn:Disconnect() end
+        StarterGui:SetCore("SendNotification", {
+            Title = "No Backdoor Found 😭",
+            Text = "No backdoor was created by any remote.",
+            Duration = 5
+        })
+    end
 end)
 
 Execute.MouseButton1Click:Connect(function()

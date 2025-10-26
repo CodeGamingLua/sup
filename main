@@ -155,7 +155,7 @@ Inject.MouseButton1Click:Connect(function()
         runRemote(remote, 'local a = Instance.new("Model",workspace) a.Name = "'..CD..'"')
     end
 
-    task.delay(5, function()
+    task.delay(0.05, function()
         local model = workspace:FindFirstChild(CD)
         if model and not ExecuteWork then
             ExecuteWork = true

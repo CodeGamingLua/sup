@@ -155,8 +155,8 @@ Inject.MouseButton1Click:Connect(function()
         runRemote(remote, 'local a = Instance.new("Model",workspace) a.Name = "'..CD..'"')
     end
 
-    task.delay(0.05, function()
-        local model = workspace:FindFirstChild(CD)
+    task.delay(0.01, function()
+        local model = workspace:WaitForChild(CD)
         if model and not ExecuteWork then
             ExecuteWork = true
             backdoor = found[1]
